@@ -12,7 +12,7 @@ uploads/
 
 # Archivos específicos del proyecto
 Dependencias.dat
-iniciar.bat
+#iniciar.bat
 package-lock.json
 
 # Archivos de configuración de Babel (opcional, si no quieres trackear cambios locales)
