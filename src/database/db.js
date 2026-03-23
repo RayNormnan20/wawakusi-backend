@@ -8,7 +8,8 @@ const createDatabaseIfNotExists = async () => {
     }
     try {        
         const connection = await mysql.createConnection({
-            host: config.host,
+            host: config.dbHost,
+            port: config.dbPort,
             user: config.user,
             password: config.password
         });
@@ -396,6 +397,8 @@ export const initDatabaseSchema = async () => {
     await createDatabaseIfNotExists();
 
     const connection = await mysql.createConnection({
+        host: config.dbHost,
+        port: config.dbPort,
         database: config.database,
         user: config.user,
         password: config.password
