@@ -7,7 +7,13 @@ try {
 let app;
 let initError;
 try {
-  app = require('../dist/app').default;
+  const presetEnv = require('@babel/preset-env');
+  require('@babel/register')({
+    presets: [[presetEnv, { targets: { node: 'current' } }]],
+    extensions: ['.js'],
+    ignore: [/node_modules/],
+  });
+  app = require('../src/app').default;
 } catch (err) {
   initError = err;
 }
