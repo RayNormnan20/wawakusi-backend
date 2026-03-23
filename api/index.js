@@ -8,8 +8,9 @@ let app;
 let initError;
 try {
   const presetEnv = require('@babel/preset-env');
+  const presetEnvFn = presetEnv && typeof presetEnv === 'object' && presetEnv.default ? presetEnv.default : presetEnv;
   require('@babel/register')({
-    presets: [[presetEnv, { targets: { node: 'current' } }]],
+    presets: [[presetEnvFn, { targets: { node: 'current' } }]],
     extensions: ['.js'],
     ignore: [/node_modules/],
   });
