@@ -2,29 +2,24 @@ import { Router } from "express";
 import { methods as productoController } from "./../controller/producto.controller";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { requireAuth, requirePermission } from "../middleware/auth.middleware";
 import config from "./../config";
 
-// Configuración de multer
-const storage = config.useCloudinary
-    ? multer.diskStorage({
-          destination: (req, file, cb) => {
-              cb(null, "uploads/");
-          },
-          filename: (req, file, cb) => {
-              const ext = path.extname(file.originalname);
-              cb(null, `${Date.now()}${ext}`);
-          }
-      })
-    : multer.diskStorage({
-          destination: (req, file, cb) => {
-              cb(null, "uploads/");
-          },
-          filename: (req, file, cb) => {
-              const ext = path.extname(file.originalname);
-              cb(null, `${Date.now()}${ext}`);
-          }
-      });
+const uploadDir = path.join(__dirname, "../../uploads");
+try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+} catch {}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `${Date.now()}${ext}`);
+    }
+});
 
 // Filtro para permitir solo archivos de imagen
 const fileFilter = (req, file, cb) => {
