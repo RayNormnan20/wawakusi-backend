@@ -24,6 +24,19 @@ const uploadLocalImage = async ({ filePath, folder = "wawakusiuploads" }) => {
     return { url: res.secure_url, publicId: res.public_id };
 };
 
+const uploadBuffer = async ({ buffer, folder = "wawakusiuploads", filename }) => {
+    if (!enabled || !buffer) return null;
+    return await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder, resource_type: "image", public_id: filename || undefined, overwrite: true },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve({ url: result.secure_url, publicId: result.public_id });
+            }
+        );
+        stream.end(buffer);
+    });
+};
 const deleteByUrl = async (url) => {
     try {
         if (!enabled || !url) return false;
@@ -42,5 +55,6 @@ const deleteByUrl = async (url) => {
 export default {
     isEnabled,
     uploadLocalImage,
+    uploadBuffer,
     deleteByUrl
 };

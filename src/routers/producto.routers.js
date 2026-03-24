@@ -6,20 +6,24 @@ import fs from "fs";
 import { requireAuth, requirePermission } from "../middleware/auth.middleware";
 import config from "./../config";
 
-const uploadDir = path.join(__dirname, "../../uploads");
-try {
-    fs.mkdirSync(uploadDir, { recursive: true });
-} catch {}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}${ext}`);
-    }
-});
+let storage;
+if (config.useCloudinary) {
+    storage = multer.memoryStorage();
+} else {
+    const uploadDir = path.join(__dirname, "../../uploads");
+    try {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    } catch {}
+    storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+            const ext = path.extname(file.originalname);
+            cb(null, `${Date.now()}${ext}`);
+        }
+    });
+}
 
 // Filtro para permitir solo archivos de imagen
 const fileFilter = (req, file, cb) => {

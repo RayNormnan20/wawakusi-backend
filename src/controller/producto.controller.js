@@ -238,18 +238,23 @@ const addProducto = async (req, res) => {
         if (req.file) {
             if (cloudinarySvc.isEnabled()) {
                 try {
-                    const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
-                    if (up?.url) Imagen = up.url;
-                    if (fs.existsSync(req.file.path)) {
-                        fs.unlink(req.file.path, () => {});
+                    if (req.file.buffer) {
+                        const up = await cloudinarySvc.uploadBuffer({ buffer: req.file.buffer });
+                        if (up?.url) Imagen = up.url;
+                    } else if (req.file.path) {
+                        const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
+                        if (up?.url) Imagen = up.url;
+                        if (fs.existsSync(req.file.path)) {
+                            fs.unlink(req.file.path, () => {});
+                        }
                     }
-                } catch {
+                } catch (e) {
                     const baseUrl = `${req.protocol}://${req.get("host")}`;
-                    Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                    Imagen = req.file.filename ? `${baseUrl}/uploads/${req.file.filename}` : null;
                 }
             } else {
                 const baseUrl = `${req.protocol}://${req.get("host")}`;
-                Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                Imagen = req.file.filename ? `${baseUrl}/uploads/${req.file.filename}` : null;
             }
         }
 
@@ -321,18 +326,23 @@ const updateProducto = async (req, res) => {
         if (req.file) {
             if (cloudinarySvc.isEnabled()) {
                 try {
-                    const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
-                    if (up?.url) Imagen = up.url;
-                    if (fs.existsSync(req.file.path)) {
-                        fs.unlink(req.file.path, () => {});
+                    if (req.file.buffer) {
+                        const up = await cloudinarySvc.uploadBuffer({ buffer: req.file.buffer });
+                        if (up?.url) Imagen = up.url;
+                    } else if (req.file.path) {
+                        const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
+                        if (up?.url) Imagen = up.url;
+                        if (fs.existsSync(req.file.path)) {
+                            fs.unlink(req.file.path, () => {});
+                        }
                     }
                 } catch {
                     const baseUrl = `${req.protocol}://${req.get("host")}`;
-                    Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                    Imagen = req.file.filename ? `${baseUrl}/uploads/${req.file.filename}` : null;
                 }
             } else {
                 const baseUrl = `${req.protocol}://${req.get("host")}`;
-                Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                Imagen = req.file.filename ? `${baseUrl}/uploads/${req.file.filename}` : null;
             }
         }
 
