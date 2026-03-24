@@ -148,6 +148,37 @@ const getPromociones = async (req, res) => {
              ORDER BY d.FECHA_FIN ASC, p.ID DESC`
         );
 
+        const productoIds = rows.map((r) => r.id).filter((v) => v != null);
+        let variantesRows = [];
+        if (productoIds.length > 0) {
+            const placeholders = productoIds.map(() => "?").join(",");
+            const [rowsVar] = await connection.query(
+                `SELECT
+                    IDVARIANTE AS idVariante,
+                    PRODUCTO_ID AS productoId,
+                    TALLA AS talla,
+                    COLOR AS color,
+                    PRECIO AS precio,
+                    STOCK AS stock
+                 FROM PRODUCTO_VARIANTE
+                 WHERE PRODUCTO_ID IN (${placeholders})`,
+                productoIds
+            );
+            variantesRows = rowsVar;
+        }
+        const variantesPorProducto = new Map();
+        for (const v of variantesRows) {
+            const arr = variantesPorProducto.get(v.productoId) || [];
+            arr.push({
+                idVariante: v.idVariante,
+                talla: v.talla,
+                color: v.color,
+                precio: normalizarNumero(v.precio),
+                stock: v.stock == null ? null : Number(v.stock)
+            });
+            variantesPorProducto.set(v.productoId, arr);
+        }
+
         const promos = rows.map((p) => {
             const precioBase = normalizarNumero(p.precioMin);
             const descuentoPorcentaje = p.descuentoPorcentaje == null ? null : Number(p.descuentoPorcentaje);
@@ -165,7 +196,7 @@ const getPromociones = async (req, res) => {
                     nombre: p.descuentoNombre,
                     porcentaje: descuentoPorcentaje
                 },
-                variantes: []
+                variantes: variantesPorProducto.get(p.id) || []
             };
         });
 
@@ -202,7 +233,7 @@ const getProducto = async (req, res) => {
 // Función para agregar un producto con imagen
 const addProducto = async (req, res) => {
     try {
-        const { Nombre, Precio, Cantidad, Descripcion } = req.body;
+        const { Nombre, Precio, Cantidad, Descripcion, Talla, Color } = req.body;
         let Imagen = null;
         if (req.file) {
             if (cloudinarySvc.isEnabled()) {
@@ -267,7 +298,7 @@ const addProducto = async (req, res) => {
         await connection.query(
             `INSERT INTO PRODUCTO_VARIANTE (PRODUCTO_ID, TALLA, COLOR, PRECIO, STOCK)
              VALUES (?, ?, ?, ?, ?)`,
-            [insertProducto.insertId, null, null, isNaN(precio) ? null : precio, isNaN(stock) ? null : stock]
+            [insertProducto.insertId, Talla || null, Color || null, isNaN(precio) ? null : precio, isNaN(stock) ? null : stock]
         );
 
         res.json({ message: "Producto agregado con éxito" });
@@ -280,7 +311,7 @@ const addProducto = async (req, res) => {
 const updateProducto = async (req, res) => {
     try {
         const { id } = req.params;
-        const { Nombre, Precio, Cantidad, Descripcion } = req.body;
+        const { Nombre, Precio, Cantidad, Descripcion, Talla, Color } = req.body;
         const connection = await getConnection();
 
         const [rows] = await connection.query("SELECT IMAGEN AS imagen FROM PRODUCTO WHERE ID = ? LIMIT 1", [id]);
@@ -367,14 +398,14 @@ const updateProducto = async (req, res) => {
         const idVariante = varRows[0]?.idVariante;
         if (idVariante) {
             await connection.query(
-                "UPDATE PRODUCTO_VARIANTE SET PRECIO = ?, STOCK = ? WHERE IDVARIANTE = ?",
-                [isNaN(precio) ? null : precio, isNaN(stock) ? null : stock, idVariante]
+                "UPDATE PRODUCTO_VARIANTE SET TALLA = ?, COLOR = ?, PRECIO = ?, STOCK = ? WHERE IDVARIANTE = ?",
+                [Talla || null, Color || null, isNaN(precio) ? null : precio, isNaN(stock) ? null : stock, idVariante]
             );
         } else {
             await connection.query(
                 `INSERT INTO PRODUCTO_VARIANTE (PRODUCTO_ID, TALLA, COLOR, PRECIO, STOCK)
                  VALUES (?, ?, ?, ?, ?)`,
-                [id, null, null, isNaN(precio) ? null : precio, isNaN(stock) ? null : stock]
+                [id, Talla || null, Color || null, isNaN(precio) ? null : precio, isNaN(stock) ? null : stock]
             );
         }
 

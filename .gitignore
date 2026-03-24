@@ -11,7 +11,7 @@ node_modules/
 uploads/
 
 # Archivos específicos del proyecto
-#Dependencias.dat
+Dependencias.dat
 #iniciar.bat
 package-lock.json
 
