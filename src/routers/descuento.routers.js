@@ -7,6 +7,7 @@ const router = Router();
 router.get("/", requireAuth, requirePermission("EDITAR_PRODUCTO"), descuentoController.listarDescuentos);
 router.post("/", requireAuth, requirePermission("EDITAR_PRODUCTO"), descuentoController.crearDescuento);
 router.put("/:id", requireAuth, requirePermission("EDITAR_PRODUCTO"), descuentoController.actualizarDescuento);
+router.put("/:id/estado", requireAuth, requirePermission("EDITAR_PRODUCTO"), descuentoController.actualizarEstadoDescuento);
 router.delete("/:id", requireAuth, requirePermission("EDITAR_PRODUCTO"), descuentoController.eliminarDescuento);
 
 export default router;

@@ -48,8 +48,7 @@ const listarDescuentos = async () => {
          FROM DESCUENTO d
          LEFT JOIN PRODUCTO_DESCUENTO pd ON pd.DESCUENTO_ID = d.IDDESCUENTO
          LEFT JOIN PRODUCTO p ON p.ID = pd.PRODUCTO_ID
-         WHERE d.ESTADO = 1
-         ORDER BY d.FECHA_FIN ASC, d.IDDESCUENTO DESC`
+         ORDER BY d.ESTADO DESC, d.FECHA_FIN ASC, d.IDDESCUENTO DESC`
     );
     return rows;
 };
@@ -105,15 +104,21 @@ const actualizarDescuento = async (id, { nombre, descripcion, porcentaje, fechaI
 
 const eliminarDescuento = async (id) => {
     await withTransaction(async (connection) => {
-        await connection.execute("DELETE FROM PRODUCTO_DESCUENTO WHERE DESCUENTO_ID = ?", [id]);
-        await connection.execute("UPDATE DESCUENTO SET ESTADO = 0 WHERE IDDESCUENTO = ?", [id]);
+        await connection.execute("UPDATE DESCUENTO SET ESTADO = 0, UPDATEDAT = ? WHERE IDDESCUENTO = ?", [new Date(), id]);
     });
+};
+
+const actualizarEstadoDescuento = async (id, estado) => {
+    const now = new Date();
+    const pool = await getConnection();
+    await pool.query("UPDATE DESCUENTO SET ESTADO = ?, UPDATEDAT = ? WHERE IDDESCUENTO = ?", [estado, now, id]);
 };
 
 export const methods = {
     listarDescuentos,
     crearDescuento,
     actualizarDescuento,
-    eliminarDescuento
+    eliminarDescuento,
+    actualizarEstadoDescuento
 };
 

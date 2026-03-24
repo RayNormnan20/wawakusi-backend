@@ -2,6 +2,7 @@ import { getConnection } from "./../database/conexcion";
 import path from "path";
 import fs from "fs";
 import config from "./../config";
+import cloudinarySvc from "./../services/cloudinary";
 
 // Función para obtener todos los productos
 const getProductos = async (req, res) => {
@@ -202,8 +203,24 @@ const getProducto = async (req, res) => {
 const addProducto = async (req, res) => {
     try {
         const { Nombre, Precio, Cantidad, Descripcion } = req.body;
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const Imagen = req.file ? `${baseUrl}/uploads/${req.file.filename}` : null;
+        let Imagen = null;
+        if (req.file) {
+            if (cloudinarySvc.isEnabled()) {
+                try {
+                    const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
+                    if (up?.url) Imagen = up.url;
+                    if (fs.existsSync(req.file.path)) {
+                        fs.unlink(req.file.path, () => {});
+                    }
+                } catch {
+                    const baseUrl = `${req.protocol}://${req.get("host")}`;
+                    Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                }
+            } else {
+                const baseUrl = `${req.protocol}://${req.get("host")}`;
+                Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+            }
+        }
 
         if (!Nombre || !Precio || !Cantidad || !Imagen) {
             return res.status(400).json({ message: "Por favor completa todos los campos requeridos." });
@@ -269,20 +286,40 @@ const updateProducto = async (req, res) => {
         const [rows] = await connection.query("SELECT IMAGEN AS imagen FROM PRODUCTO WHERE ID = ? LIMIT 1", [id]);
         const currentImage = rows[0]?.imagen;
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const Imagen = req.file ? `${baseUrl}/uploads/${req.file.filename}` : null;
+        let Imagen = null;
+        if (req.file) {
+            if (cloudinarySvc.isEnabled()) {
+                try {
+                    const up = await cloudinarySvc.uploadLocalImage({ filePath: req.file.path });
+                    if (up?.url) Imagen = up.url;
+                    if (fs.existsSync(req.file.path)) {
+                        fs.unlink(req.file.path, () => {});
+                    }
+                } catch {
+                    const baseUrl = `${req.protocol}://${req.get("host")}`;
+                    Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+                }
+            } else {
+                const baseUrl = `${req.protocol}://${req.get("host")}`;
+                Imagen = `${baseUrl}/uploads/${req.file.filename}`;
+            }
+        }
 
         if (!Nombre || !Precio || !Cantidad) {
             return res.status(400).json({ message: "Por favor completa todos los campos requeridos." });
         }
 
         if (Imagen && currentImage) {
-            const imageName = path.basename(currentImage);
-            const imagePath = path.join(__dirname, '../../uploads', imageName);
-            if (fs.existsSync(imagePath)) {
-                fs.unlink(imagePath, (err) => {
-                    if (err) console.error('Error al eliminar la imagen anterior:', err);
-                });
+            if (cloudinarySvc.isEnabled() && /res\.cloudinary\.com|cloudinary\.com/.test(currentImage)) {
+                await cloudinarySvc.deleteByUrl(currentImage);
+            } else {
+                const imageName = path.basename(currentImage);
+                const imagePath = path.join(__dirname, "../../uploads", imageName);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlink(imagePath, (err) => {
+                        if (err) console.error("Error al eliminar la imagen anterior:", err);
+                    });
+                }
             }
         }
 
@@ -355,17 +392,17 @@ const eliminarImagen = async (id) => {
         const currentImage = rows[0]?.imagen;
 
         if (currentImage) {
-            const imageName = path.basename(currentImage);
-            const imagePath = path.join(__dirname, '../../uploads', imageName);
-
-            console.log(`Nombre de la imagen: ${imageName}`);
-            //console.log(`Ruta completa de la imagen: ${imagePath}`);
-
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);  // Eliminar la imagen de forma sincrónica
-                console.log(`Imagen ${imageName} eliminada correctamente.`);
+            if (cloudinarySvc.isEnabled() && /res\.cloudinary\.com|cloudinary\.com/.test(currentImage)) {
+                await cloudinarySvc.deleteByUrl(currentImage);
             } else {
-                console.log(`La imagen ${imageName} no existe en la carpeta uploads.`);
+                const imageName = path.basename(currentImage);
+                const imagePath = path.join(__dirname, "../../uploads", imageName);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                    console.log(`Imagen ${imageName} eliminada correctamente.`);
+                } else {
+                    console.log(`La imagen ${imageName} no existe en la carpeta uploads.`);
+                }
             }
         } else {
             console.log("No se encontró la imagen asociada con el ID proporcionado.");

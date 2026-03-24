@@ -125,7 +125,8 @@ const actualizarEstado = async (req, res) => {
         const allowed = new Set([
             checkoutModel.VentaEstado.ENVIADO,
             checkoutModel.VentaEstado.EN_CAMINO,
-            checkoutModel.VentaEstado.FINALIZADO
+            checkoutModel.VentaEstado.FINALIZADO,
+            checkoutModel.VentaEstado.CANCELADO
         ]);
         if (!allowed.has(estadoNum)) return res.status(400).json({ rpta: false, mensaje: "Estado no permitido." });
 
@@ -141,22 +142,6 @@ const actualizarEstado = async (req, res) => {
         ]);
         if (bloqueados.has(estadoActual)) {
             return res.status(400).json({ rpta: false, mensaje: "No se puede actualizar el estado en la situación actual." });
-        }
-
-        const transiciones = new Map();
-        transiciones.set(checkoutModel.VentaEstado.PAGADO, new Set([checkoutModel.VentaEstado.ENVIADO]));
-        transiciones.set(
-            checkoutModel.VentaEstado.ENVIADO,
-            new Set([checkoutModel.VentaEstado.EN_CAMINO, checkoutModel.VentaEstado.FINALIZADO])
-        );
-        transiciones.set(checkoutModel.VentaEstado.EN_CAMINO, new Set([checkoutModel.VentaEstado.FINALIZADO]));
-
-        const permitidosDesdeActual = transiciones.get(estadoActual) || new Set();
-        if (!permitidosDesdeActual.has(estadoNum)) {
-            return res.status(400).json({
-                rpta: false,
-                mensaje: `Transición inválida: ${estadoVentaLabel(estadoActual)} → ${estadoVentaLabel(estadoNum)}`
-            });
         }
 
         await ventaModel.actualizarEstadoVenta(idVenta, estadoNum);

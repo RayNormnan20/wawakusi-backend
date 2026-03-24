@@ -69,7 +69,23 @@ const eliminarDescuento = async (req, res) => {
     try {
         const { id } = req.params;
         await descuentoModel.eliminarDescuento(id);
-        res.json({ message: "Promoción eliminada con éxito" });
+        res.json({ message: "Promoción desactivada con éxito" });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+};
+
+const actualizarEstadoDescuento = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body || {};
+        const idNum = Number(id);
+        const estadoNum = Number(estado);
+        if (!isFinite(idNum) || !isFinite(estadoNum) || (estadoNum !== 0 && estadoNum !== 1)) {
+            return res.status(400).json({ message: "Datos inválidos." });
+        }
+        await descuentoModel.actualizarEstadoDescuento(idNum, estadoNum);
+        res.json({ message: estadoNum === 1 ? "Promoción activada." : "Promoción desactivada." });
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -79,5 +95,6 @@ export const methods = {
     listarDescuentos,
     crearDescuento,
     actualizarDescuento,
-    eliminarDescuento
+    eliminarDescuento,
+    actualizarEstadoDescuento
 };

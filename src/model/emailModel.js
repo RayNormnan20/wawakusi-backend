@@ -15,7 +15,7 @@ const getTransporter = () => {
     });
 };
 
-const enviarCorreo = async ({ to, subject, html }) => {
+const enviarCorreo = async ({ to, subject, html, attachments }) => {
     const transporter = getTransporter();
     if (!transporter) return { ok: false, skipped: true };
 
@@ -23,7 +23,8 @@ const enviarCorreo = async ({ to, subject, html }) => {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to,
         subject,
-        html
+        html,
+        attachments: Array.isArray(attachments) ? attachments : undefined
     });
     return { ok: true };
 };
